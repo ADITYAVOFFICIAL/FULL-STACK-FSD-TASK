@@ -15,9 +15,11 @@ app.use(express.json());
 // Removed static file serving for /uploads, as files won't be stored locally
 // app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// MongoDB Connection - Use Environment Variable from Vercel settings
+// MongoDB Connection - Hardcoded (Not Recommended for Security)
+const MONGODB_URI_HARDCODED = "mongodb+srv://adityaverma:aditv1234Aa@devconnectcluster.paguw.mongodb.net/";
+
 mongoose
-  .connect(process.env.MONGODB_URI, { // Use environment variable
+  .connect(MONGODB_URI_HARDCODED, { // Use hardcoded variable
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
