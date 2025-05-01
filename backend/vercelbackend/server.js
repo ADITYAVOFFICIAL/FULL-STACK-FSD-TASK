@@ -11,7 +11,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: 'https://teammavericks.vercel.app', // Allow requests from your frontend domain
+    origin: 'https://teammavericks.vercel.app/*', // Allow requests from your frontend domain
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow common methods
     allowedHeaders: ['Content-Type', 'Authorization'] // Allow necessary headers
   }));
