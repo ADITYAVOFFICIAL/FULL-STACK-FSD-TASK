@@ -10,8 +10,12 @@ const app = express();
 // const PORT = process.env.PORT || 5069;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: 'https://teammavericks.vercel.app', // Allow requests from your frontend domain
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow common methods
+    allowedHeaders: ['Content-Type', 'Authorization'] // Allow necessary headers
+  }));
+  app.use(express.json());
 // Removed static file serving for /uploads, as files won't be stored locally
 // app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
