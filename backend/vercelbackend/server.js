@@ -1,33 +1,33 @@
-// --- Vercel Function Start ---
-console.log("--- Vercel Function Start ---");
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const multer = require("multer");
-
-console.log("Modules loaded.");
+const { put } = require('@vercel/blob'); // Import Vercel Blob SDK
 
 const app = express();
-console.log("Express app initialized.");
 
 // --- Middleware ---
 app.use(cors({
-    origin: '*', // WARNING: Allow all origins - restrict in production
+    origin: '*', // Be more specific in production
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-console.log("Middleware configured.");
 
 // --- MongoDB Connection ---
-// WARNING: Hardcoding credentials is insecure. Use Environment Variables.
-const MONGODB_URI_HARDCODED = process.env.MONGODB_URI || "mongodb+srv://adityaverma:aditv1234Aa@devconnectcluster.paguw.mongodb.net/?retryWrites=true&w=majority&appName=DevConnectCluster";
-console.log("Attempting MongoDB connection...");
+// !! IMPORTANT: Use Environment Variable in Production !!
+// const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = "mongodb+srv://adityaverma:aditv1234Aa@devconnectcluster.paguw.mongodb.net/?retryWrites=true&w=majority&appName=DevConnectCluster"; // Replace with process.env.MONGODB_URI
 
-mongoose.connect(MONGODB_URI_HARDCODED)
-  .then(() => console.log("MongoDB connection successful."))
-  .catch((err) => console.error("!!! MongoDB connection error:", err));
+if (!MONGODB_URI) {
+    console.error("FATAL ERROR: MONGODB_URI environment variable is not set.");
+    // In a real app, you might exit or prevent startup: process.exit(1);
+} else {
+    mongoose
+      .connect(MONGODB_URI)
+      .then(() => console.log("MongoDB connection successful."))
+      .catch((err) => console.error("!!! MongoDB connection error:", err));
+}
 
 // --- Member Model ---
 const memberSchema = new mongoose.Schema({
@@ -45,19 +45,16 @@ const memberSchema = new mongoose.Schema({
   aboutYou: { type: String },
   aim: { type: String },
   joinDate: { type: Date, default: Date.now },
-  // Stores the image as a Base64 Data URL string
-  profileImage: { type: String },
+  profileImage: { type: String }, // This will store the Vercel Blob URL
 });
 
 const Member = mongoose.model("Member", memberSchema);
-console.log("Member model defined.");
 
 // --- File Upload Configuration ---
-// Use memoryStorage to get the file buffer
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (adjust as needed)
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|gif/;
     const mimetype = filetypes.test(file.mimetype);
@@ -67,33 +64,27 @@ const upload = multer({
     cb(new Error("Invalid file type. Only JPEG, PNG, GIF allowed."));
   },
 });
-console.log("Multer configured.");
 
 // --- API Routes ---
 app.get("/api/members", async (req, res) => {
-  console.log(">>> GET /api/members");
   try {
     const members = await Member.find();
-    console.log(`Found ${members.length} members.`);
     res.json(members);
   } catch (err) {
-    console.error("!!! Error GET /api/members:", err);
+    console.error("Error in GET /api/members:", err);
     res.status(500).json({ error: "Failed to fetch members", details: err.message });
   }
 });
 
 app.get("/api/members/:id", async (req, res) => {
-    console.log(`>>> GET /api/members/${req.params.id}`);
     try {
         const member = await Member.findById(req.params.id);
         if (!member) {
-            console.log(`Member not found: ${req.params.id}`);
             return res.status(404).json({ error: "Member not found" });
         }
-        console.log(`Found member: ${req.params.id}`);
         res.json(member);
     } catch (err) {
-        console.error(`!!! Error GET /api/members/${req.params.id}:`, err);
+        console.error(`Error in GET /api/members/${req.params.id}:`, err);
         if (err.name === 'CastError') {
              return res.status(400).json({ error: "Invalid member ID format" });
         }
@@ -102,34 +93,45 @@ app.get("/api/members/:id", async (req, res) => {
 });
 
 app.post("/api/members", upload.single("profileImage"), async (req, res) => {
-  console.log(">>> POST /api/members");
+  console.log("Received POST /api/members request");
   try {
     const {
       name, role, email, phone, department,
       rollNumber, year, hobbies, internship,
       certificates, projects, aboutYou, aim,
     } = req.body;
-    console.log("Request body parsed:", { name, role, email });
 
-    let profileImageDataUrl = null; // Changed variable name for clarity
-
-    // --- Image Handling: Convert buffer to Base64 Data URL ---
+    // --- Vercel Blob Upload Logic ---
+    let profileImageUrl = null;
     if (req.file) {
-        console.log(`Received file: ${req.file.originalname}, size: ${req.file.size}, mimetype: ${req.file.mimetype}`);
-        // Convert the buffer to a Base64 string
-        const base64Image = req.file.buffer.toString('base64');
-        // Create the Data URL
-        profileImageDataUrl = `data:${req.file.mimetype};base64,${base64Image}`;
-        console.log(`Generated Data URL for ${req.file.originalname} (length: ${profileImageDataUrl.length})`);
-        // WARNING: Storing large images this way can exceed MongoDB's 16MB document limit and impact performance.
-        // Consider cloud storage (Vercel Blob, S3, etc.) for production applications.
+        console.log(`Received file: ${req.file.originalname}, size: ${req.file.size}`);
+        // Construct a unique filename for the blob
+        const filename = `${Date.now()}-${req.file.originalname.replace(/\s+/g, '_')}`;
+        const blobPathname = `profile-images/${filename}`; // Store in a folder
+        console.log(`Attempting to upload to Vercel Blob at path: ${blobPathname}`);
+
+        try {
+            const blob = await put(blobPathname, req.file.buffer, {
+              access: 'public', // Make the blob publicly accessible
+              token: process.env.BLOB_READ_WRITE_TOKEN // Explicitly pass token if needed, usually inferred
+            });
+            profileImageUrl = blob.url; // Get the public URL
+            console.log(`File uploaded successfully to Vercel Blob: ${profileImageUrl}`);
+        } catch (blobError) {
+            console.error("!!! Vercel Blob upload error:", blobError);
+            // Decide if the member should still be created without an image
+            // return res.status(500).json({ error: "Failed to upload profile image.", details: blobError.message });
+            // Or set profileImageUrl to null and continue, logging the error
+             profileImageUrl = null; // Or a default image URL
+             // Optionally add an error message to the response later
+        }
     } else {
-        console.log("No profile image file received.");
+        console.log("No profile image file received in request.");
     }
-    // --- End Image Handling ---
+    // --- End Vercel Blob Upload Logic ---
+
 
     if (!name || !role || !email) {
-      console.log("Validation failed: Name, role, or email missing.");
       return res.status(400).json({ error: "Name, role, and email are required" });
     }
 
@@ -137,7 +139,7 @@ app.post("/api/members", upload.single("profileImage"), async (req, res) => {
 
     const memberData = {
       name, role, email,
-      profileImage: profileImageDataUrl, // Store the Data URL string or null
+      profileImage: profileImageUrl, // Use the actual Blob URL or null
       ...(phone && { phone }),
       ...(department && { department }),
       ...(rollNumber && { rollNumber }),
@@ -149,31 +151,28 @@ app.post("/api/members", upload.single("profileImage"), async (req, res) => {
       ...(aboutYou && { aboutYou }),
       ...(aim && { aim }),
     };
-    console.log("Member data prepared for saving.");
 
-    // Check for existing members (optional, based on unique fields)
-    const existingMemberByEmail = await Member.findOne({ email: memberData.email });
-    if (existingMemberByEmail) {
-        console.log(`Conflict: Email ${memberData.email} exists.`);
-        return res.status(409).json({ error: "Member with this Email already exists." });
-    }
-    if (memberData.rollNumber) {
-        const existingMemberByRoll = await Member.findOne({ rollNumber: memberData.rollNumber });
-        if (existingMemberByRoll) {
-            console.log(`Conflict: Roll number ${memberData.rollNumber} exists.`);
-            return res.status(409).json({ error: "Member with this Roll Number already exists." });
+    // Check for existing members (improved logic)
+    const existingConditions = [];
+    if (email) existingConditions.push({ email: email });
+    if (rollNumber) existingConditions.push({ rollNumber: rollNumber });
+
+    if (existingConditions.length > 0) {
+        const existingMember = await Member.findOne({ $or: existingConditions });
+        if (existingMember) {
+            let conflictField = existingMember.email === email ? 'Email' : 'Roll Number';
+            console.log(`Conflict: Member with this ${conflictField} already exists.`);
+            return res.status(409).json({ error: `Member with this ${conflictField} already exists.` });
         }
     }
 
-    console.log("Creating and saving new member...");
     const newMember = new Member(memberData);
     await newMember.save();
-    console.log(`New member saved successfully: ${newMember._id}`);
-    // Return the created member (including the profileImage Data URL)
+    console.log(`New member saved successfully with ID: ${newMember._id}`);
     res.status(201).json(newMember);
 
   } catch (err) {
-     console.error("!!! Error POST /api/members:", err);
+     console.error("!!! Error adding member in POST /api/members:", err);
      if (err instanceof multer.MulterError) {
          return res.status(400).json({ error: `File upload error: ${err.message}` });
      } else if (err.message.includes("Invalid file type")) {
@@ -185,13 +184,10 @@ app.post("/api/members", upload.single("profileImage"), async (req, res) => {
         const field = Object.keys(err.keyValue)[0];
         return res.status(409).json({ error: `An account with this ${field} already exists.` });
     }
-     res.status(500).json({ error: "An internal server error occurred.", details: err.message });
+     res.status(500).json({ error: "An internal server error occurred while adding the member.", details: err.message });
   }
 });
 
-console.log("Route definitions complete.");
-
 // --- Export the app for Vercel ---
-console.log("Exporting app for Vercel...");
 module.exports = app;
 console.log("--- Vercel Function Initialization Complete ---");
