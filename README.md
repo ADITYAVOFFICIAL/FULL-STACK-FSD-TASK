@@ -1,173 +1,148 @@
-# Student Team Members Management Application
+# FULL-STACK-FSD-TASK - Student Team Members Management
 
-A full-stack application for managing student team members, built with React.js, Node.js, Express, and MongoDB.
+This project is a full-stack web application for managing student team members. It includes a React frontend built with Vite, TypeScript, and Shadcn/ui, and a Node.js/Express backend with MongoDB for data persistence.
 
-## Project Description
+## Features
 
-This application allows users to:
-- View team information on the home page
-- Add new team members with profile images
-- View a list of all team members
-- View detailed information about individual team members
+*   **Frontend:**
+    *   View team information.
+    *   Add new team members via a form with profile image uploads.
+    *   Display a list of all team members.
+    *   View detailed information for individual members.
+    *   Responsive design.
+    *   Dark mode support.
+*   **Backend:**
+    *   RESTful API for managing team members (Create, Read).
+    *   MongoDB integration using Mongoose for data storage.
+    *   Handles profile image uploads using Multer.
+    *   Serves uploaded images statically.
 
-## Technologies Used
+## Tech Stack
 
-- **Frontend**: React.js with React Router
-- **Backend**: Node.js with Express
-- **Database**: MongoDB
-- **File Upload**: Multer
-- **HTTP Client**: Axios
+**Frontend:** ([frontend/](frontend/))
+
+*   Framework/Library: React.js
+*   Build Tool: Vite
+*   Language: TypeScript
+*   Styling: Tailwind CSS
+*   UI Components: Shadcn/ui
+*   Routing: React Router DOM
+*   State Management/Data Fetching: TanStack Query (React Query)
+*   Form Handling: React Hook Form + Zod
+*   HTTP Client: Axios
+*   Package Manager: Bun
+
+**Backend:** ([backend/](backend/))
+
+*   Runtime Environment: Node.js
+*   Framework: Express.js
+*   Database: MongoDB
+*   ODM: Mongoose
+*   Middleware: CORS, Multer
+*   Package Manager: npm
 
 ## Project Structure
+```
+.
+├── backend/
+│   ├── uploads/               # Stores uploaded profile images (created on run)
+│   ├── package.json           # Backend dependencies and scripts
+│   ├── server.js              # Express server setup and API routes
+│   └── README.md              # Backend-specific documentation
+├── frontend/
+│   ├── public/                # Static assets
+│   ├── src/                   # Frontend source code (components, pages, etc.)
+│   ├── bun.lockb              # Bun lockfile
+│   ├── index.html             # HTML entry point for Vite
+│   ├── package.json           # Frontend dependencies and scripts
+│   ├── vite.config.ts         # Vite configuration
+│   ├── tailwind.config.ts     # Tailwind CSS configuration
+│   ├── tsconfig.json          # TypeScript configuration
+│   └── README.md              # Frontend-specific documentation
+├── .gitignore
+└── README.md                  # This file (Project root README)
 
-\`\`\`
-├── frontend/                # React frontend
-│   ├── public/              # Static files
-│   └── src/                 # Source files
-│       ├── components/      # Reusable components
-│       ├── pages/           # Page components
-│       ├── App.js           # Main App component with routing
-│       └── App.css          # Global styles
-│
-└── backend/                 # Node.js backend
-    ├── uploads/             # Uploaded profile images
-    └── server.js            # Express server and API endpoints
-\`\`\`
+```
 
-## Installation
 
-### Prerequisites
+*(Note: `vercelbackend` and `frontend-vercel` directories are ignored in this overview as requested.)*
 
-- Node.js and npm
-- MongoDB (local installation or MongoDB Atlas)
-- Visual Studio Code (or any code editor)
-- MongoDB Compass (optional, for database management)
+## Prerequisites
 
-### Setup Instructions
+*   [Node.js](https://nodejs.org/) (includes npm) installed globally.
+*   [Bun](https://bun.sh/docs/installation) installed globally.
+*   [MongoDB](https://www.mongodb.com/try/download/community) installed and running locally, OR a MongoDB Atlas connection string.
+    *   The backend currently uses a hardcoded Atlas connection string in [`backend/server.js`](backend/server.js). Update this if necessary or configure environment variables.
 
-1. Clone the repository:
-   \`\`\`bash
-   git clone https://github.com/your-username/your-team-name.git
-   cd your-team-name
-   \`\`\`
+## Setup and Installation
 
-2. Install frontend dependencies:
-   \`\`\`bash
-   cd frontend
-   npm install
-   \`\`\`
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd FULL-STACK-FSD-TASK
+    ```
 
-3. Install backend dependencies:
-   \`\`\`bash
-   cd ../backend
-   npm install
-   \`\`\`
+2.  **Setup Backend:**
+    ```bash
+    cd backend
+    npm install
+    # Ensure the MongoDB connection string in server.js is correct for your setup.
+    # The 'uploads/' directory will be created automatically when the server runs.
+    cd ..
+    ```
 
-4. Create uploads directory in backend (if not exists):
-   \`\`\`bash
-   mkdir -p uploads
-   \`\`\`
+3.  **Setup Frontend:**
+    ```bash
+    cd frontend
+    bun install
+    cd ..
+    ```
 
-5. Start MongoDB (if using local installation):
-   \`\`\`bash
-   mongod
-   \`\`\`
+## Running the Application
 
-6. Start the backend server:
-   \`\`\`bash
-   cd backend
-   npm run dev
-   \`\`\`
+1.  **Run the Backend Server:**
+    Open a terminal in the `backend` directory:
+    ```bash
+    # Using the development script with nodemon (recommended)
+    npm run dev
+    ```
+    or
+    ```bash
+    # Directly using node
+    npm start
+    ```
+    The backend server should start, typically on port 5069 (check console output).
 
-7. Start the frontend development server:
-   \`\`\`bash
-   cd frontend
-   npm start
-   \`\`\`
+2.  **Run the Frontend Development Server:**
+    Open another terminal in the `frontend` directory:
+    ```bash
+    bun run dev
+    ```
+    The frontend development server (Vite) will start, typically on port 8080 (check [`frontend/vite.config.ts`](frontend/vite.config.ts) or console output).
 
-8. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+3.  **Access the Application:**
+    Open your web browser and navigate to the frontend URL (e.g., `http://localhost:8080`).
 
-## API Endpoints
+## Backend API Endpoints
 
-The application provides the following API endpoints:
+The backend exposes the following main endpoints under the `/api` prefix (running on port 5069 by default):
 
-### GET /api/members
-- Description: Retrieves all team members
-- Response: Array of member objects
-- Example response:
-  \`\`\`json
-  [
-    {
-      "_id": "60d21b4667d0d8992e610c85",
-      "name": "John Doe",
-      "role": "Team Lead",
-      "email": "john.doe@example.com",
-      "phone": "+1 (555) 123-4567",
-      "department": "Engineering",
-      "joinDate": "2023-08-15T10:30:00.000Z",
-      "profileImage": "/uploads/1691234567890.jpg"
-    },
-    ...
-  ]
-  \`\`\`
+*   `GET /api/members`: Retrieves a list of all team members.
+*   `GET /api/members/:id`: Retrieves a single team member by their ID.
+*   `POST /api/members`: Adds a new team member. Expects `multipart/form-data` including member details and an optional `profileImage` file.
 
-### GET /api/members/:id
-- Description: Retrieves a specific team member by ID
-- Parameters: id - The MongoDB ObjectId of the member
-- Response: Member object
-- Example response:
-  \`\`\`json
-  {
-    "_id": "60d21b4667d0d8992e610c85",
-    "name": "John Doe",
-    "role": "Team Lead",
-    "email": "john.doe@example.com",
-    "phone": "+1 (555) 123-4567",
-    "department": "Engineering",
-    "joinDate": "2023-08-15T10:30:00.000Z",
-    "profileImage": "/uploads/1691234567890.jpg"
-  }
-  \`\`\`
+*(Refer to [`backend/README.md`](backend/README.md) for more details on API endpoints and request/response formats.)*
 
-### POST /api/members
-- Description: Creates a new team member
-- Request: FormData containing member details and profile image
-- Response: Created member object
-- Example request:
-  \`\`\`
-  FormData:
-  - name: "John Doe"
-  - role: "Developer"
-  - email: "john.doe@example.com"
-  - phone: "+1 (555) 123-4567"
-  - department: "Engineering"
-  - profileImage: [File]
-  \`\`\`
+## Building for Production (Frontend)
 
-## How to Run the App
+To create an optimized production build of the frontend:
 
-1. Development mode:
-   \`\`\`bash
-   # Start backend
-   cd backend
-   npm run dev
-   
-   # Start frontend (in a new terminal)
-   cd frontend
-   npm start
-   \`\`\`
-
-2. Build for production:
-   \`\`\`bash
-   cd frontend
-   npm run build
-   \`\`\`
-
-## Contributors
-
-- Your Name
-- Team Members
-
-## License
-
-This project is licensed under the MIT License.
+1.  Navigate to the `frontend` directory:
+    ```bash
+    cd frontend
+    ```
+2.  Run the build script:
+    ```bash
+    bun run build
+    ```
+3.  The production-ready static assets will be generated in the `frontend/dist/` directory. This directory can be deployed to any static file hosting service. You can preview the build locally using `bun run preview`.
